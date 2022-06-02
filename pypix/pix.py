@@ -28,19 +28,10 @@ class Pix(object):
         self.amount = None
 
     def __str__(self):
-        payload = "{}{}{}{}{}{}{}{}{}".format(
-            self.get_value(self._ID_PAYLOAD_FORMAT_INDICATOR, "01"),
-            self.get_merchant_account_information(),
-            self.get_value(self._ID_MERCHANT_CATEGORY_CODE, "0000"),
-            self.get_value(self._ID_TRANSACTION_CURRENCY, "986"),
-            self.get_value(self._ID_TRANSACTION_AMOUNT, self.amount),
-            self.get_value(self._ID_COUNTRY_CODE, self.country_code),
-            self.get_value(self._ID_MERCHANT_NAME, self.merchant_name),
-            self.get_value(self._ID_MERCHANT_CITY, self.merchant_city),
-            self.get_additional_data_field_template(),
-        )
+        payload = f'{self.get_value(self._ID_PAYLOAD_FORMAT_INDICATOR, "01")}{self.get_merchant_account_information()}{self.get_value(self._ID_MERCHANT_CATEGORY_CODE, "0000")}{self.get_value(self._ID_TRANSACTION_CURRENCY, "986")}{self.get_value(self._ID_TRANSACTION_AMOUNT, self.amount)}{self.get_value(self._ID_COUNTRY_CODE, self.country_code)}{self.get_value(self._ID_MERCHANT_NAME, self.merchant_name)}{self.get_value(self._ID_MERCHANT_CITY, self.merchant_city)}{self.get_additional_data_field_template()}'
 
-        return "{}{}".format(payload, self.get_crc16(payload))
+
+        return f"{payload}{self.get_crc16(payload)}"
 
     def set_pixkey(self, pixkey: str):
         self.pixkey = pixkey
@@ -67,7 +58,7 @@ class Pix(object):
 
     def get_value(self, identify: str, value: str):
         """Concatenates the identifier and the value"""
-        return "{}{}{}".format(identify, str(len(value)).zfill(2), value)
+        return f"{identify}{str(len(value)).zfill(2)}{value}"
 
     def get_merchant_account_information(self):
         gui = self.get_value(
@@ -83,8 +74,7 @@ class Pix(object):
         )
 
         return self.get_value(
-            self._ID_MERCHANT_ACCOUNT_INFORMATION,
-            "{}{}{}".format(gui, key, description),
+            self._ID_MERCHANT_ACCOUNT_INFORMATION, f"{gui}{key}{description}"
         )
 
     def get_additional_data_field_template(self):
@@ -100,13 +90,10 @@ class Pix(object):
         return self.toHex(rest) + digits[x]
 
     def get_crc16(self, payload: str):
-        payload = "{}{}04".format(payload, self._ID_CRC16)
+        payload = f"{payload}{self._ID_CRC16}04"
         crc = 0xFFFF
         for i in range(len(payload)):
             crc ^= ord(payload[i]) << 8
-            for j in range(8):
-                if (crc & 0x8000) > 0:
-                    crc = (crc << 1) ^ 0x1021
-                else:
-                    crc = crc << 1
-        return "{}{}{}".format(self._ID_CRC16, "04", self.toHex(crc & 0xFFFF).upper())
+            for _ in range(8):
+                crc = (crc << 1) ^ 0x1021 if (crc & 0x8000) > 0 else crc << 1
+        return f"{self._ID_CRC16}04{self.toHex(crc & 0xFFFF).upper()}"
